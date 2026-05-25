@@ -22,8 +22,8 @@ const originalQuery = pool.query.bind(pool);
     return Promise.resolve({ rows: [] });
   }
   return originalQuery(text, params).catch(e => {
-    console.error(`[DB pool.query Error] ${e.message}`);
-    return { rows: [] };
+    console.error(`[DB pool.query Error] ${e.message} | Query: ${typeof text === 'string' ? text.slice(0, 80) : '?'}`);
+    throw e; // Re-throw so callers can handle / 500 appropriately
   });
 };
 
@@ -39,8 +39,8 @@ export const query = (text: string, params?: any[]) => {
     return Promise.resolve({ rows: [] });
   }
   return pool.query(text, params).catch(e => {
-    console.error(`[DB Error] ${e.message}`);
-    return { rows: [] };
+    console.error(`[DB Error] ${e.message} | Query: ${text.slice(0, 80)}`);
+    throw e;
   });
 };
 export const getClient = async () => {

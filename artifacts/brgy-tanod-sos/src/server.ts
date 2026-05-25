@@ -22,7 +22,7 @@ async function startServer() {
   console.log(`[Server] Booting Brgy. Tanod S.O.S...`);
   console.log(`[Server] PID: ${process.pid} | Port: ${PORT} | Mode: ${config.nodeEnv}`);
   console.log(`[Server] Database URL present: ${!!config.databaseUrl}`);
-  console.log(`[Server] Gemini API Key present: ${!!config.geminiApiKey}`);
+  console.log(`[Server] Gemini API Key present: ${!!config.geminiApiKey}, Model: ${config.geminiModel}`);
   
   try {
     console.log('[Server] Connecting to Tactical Persistence Layer...');
