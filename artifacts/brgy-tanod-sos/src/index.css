@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #040b1a;
+  --bg-secondary: #071427;
+  --panel-bg: rgba(7, 20, 39, 0.75);
+
+  --blue-primary: #00aaff;
+  --blue-glow: #0088ff;
+  --red-primary: #ff2d55;
+  --cyan-primary: #00f0ff;
+
+  --text-primary: #ffffff;
+  --text-secondary: #8aa4c8;
+
+  --border-glow: rgba(0, 170, 255, 0.4);
+}
+
+@theme {
+  --font-sans: "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Orbitron", sans-serif;
+  --font-mono: "Rajdhani", monospace;
+
+  /* Tactical Palette */
+  --color-tactical-blue: #00AEEF;
+  --color-tactical-cyan: #00F0FF;
+  --color-tactical-red: #FF3B5C;
+  --color-tactical-dark: #040B1A;
+  --color-emergency: #FF3B30;
+  
+  --shadow-tactical: 0 0 30px rgba(0,170,255,0.35);
+}
+
+@layer base {
+  body {
+    background: radial-gradient(circle at top, #0d1c3d 0%, #040b1a 45%), #040b1a;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .tactical-panel, .glass-panel {
+    background: rgba(8, 15, 30, 0.78);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(0, 170, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0, 170, 255, 0.12), inset 0 0 30px rgba(0, 170, 255, 0.05);
+    border-radius: 24px;
+  }
+
+  .tactical-glow {
+    box-shadow: 0 0 12px rgba(0, 170, 255, 0.5), 0 0 30px rgba(0, 170, 255, 0.2);
+  }
+
+  .tactical-grid {
+    background-image: linear-gradient(rgba(0,170,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,170,255,0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .animate-radar { animation: radarSweep 8s linear infinite; }
+  .animate-glow { animation: pulseGlow 2s infinite; }
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 8px rgba(0,170,255,0.2); }
+  50% { box-shadow: 0 0 20px rgba(0,170,255,0.5), 0 0 40px rgba(0,170,255,0.3); }
+  100% { box-shadow: 0 0 8px rgba(0,170,255,0.2); }
+}
+
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes flash {
+  0% { background-color: #ff3b30; }
+  50% { background-color: #990000; }
+  100% { background-color: #ff3b30; }
+}
+
+
+
+

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Brgy. Tanod S.O.S."
+version = "1.0.0"
+id = "artifacts/brgy-tanod-sos"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24810
+
+[services.development]
+run = "pnpm --filter @workspace/brgy-tanod-sos run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/brgy-tanod-sos", "run", "build" ]
+publicDir = "artifacts/brgy-tanod-sos/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24810"
+BASE_PATH = "/"
