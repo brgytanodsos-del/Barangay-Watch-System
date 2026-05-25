@@ -404,7 +404,14 @@ export default function App() {
         // ── 1. Try Firebase Authentication first ───────────────────────────
         let firebaseUser: any = null;
         try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          // Wrap in a timeout so mobile networks that can't reach Firebase
+          // quickly fall back to the backend SQL login.
+          const userCredential = await Promise.race([
+            signInWithEmailAndPassword(auth, email, password),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Firebase timed out')), 5000)
+            ),
+          ]);
           firebaseUser = userCredential.user;
         } catch (fbErr: any) {
           // If Firebase says "user-not-found", the account may only exist in SQL DB
@@ -413,9 +420,13 @@ export default function App() {
             fbErr.code === 'auth/user-not-found' ||
             fbErr.code === 'auth/wrong-password'
           ) {
-            console.log('[Auth] Firebase login failed, trying backend API...');
+            console.log('[Auth] Firebase login failed (wrong creds), trying backend API...');
+          } else if (fbErr.code === 'auth/network-request-failed') {
+            console.log('[Auth] Firebase network error, trying backend API...');
+          } else if (fbErr.message === 'Firebase timed out') {
+            console.log('[Auth] Firebase timeout, trying backend API...');
           } else {
-            throw fbErr; // Re-throw unexpected errors
+            console.log('[Auth] Firebase unexpected error (' + (fbErr.code || fbErr.message) + '), trying backend API...');
           }
         }
 
@@ -441,7 +452,9 @@ export default function App() {
         }
 
         // ── 2. Fallback: backend SQL login (for bootstrap/admin accounts) ───
+        console.log('[Auth] Falling back to backend SQL login for:', email);
         const backendRes = await api.auth.login({ email, password });
+        console.log('[Auth] Backend response:', JSON.stringify(backendRes));
         if (!backendRes || !backendRes.success) {
           throw new Error(backendRes?.message || 'Login failed');
         }
