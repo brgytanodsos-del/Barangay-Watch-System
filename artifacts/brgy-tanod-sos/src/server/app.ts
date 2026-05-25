@@ -16,17 +16,9 @@ const allowedOrigins: string[] = config.corsOrigin
   ? config.corsOrigin.split(',').map((o) => o.trim()).filter(Boolean)
   : [];
 
-// ── Bug 1 Fix: COOP + COEP headers ────────────────────────────────────────────
-// WebLLM uses SharedArrayBuffer for multi-threaded WASM.
-// Browsers only expose SharedArrayBuffer when the page is "cross-origin isolated",
-// which requires BOTH of these headers on every response:
-//   Cross-Origin-Opener-Policy: same-origin
-//   Cross-Origin-Embedder-Policy: require-corp
-//
-// These are applied BEFORE helmet so they aren't overridden.
+// COOP header allows popups (Google Sign-In) while still being reasonably isolated
 app.use((_req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
 
@@ -41,14 +33,17 @@ app.use(
         // 'blob:' is needed for WebLLM's dynamically created worker scripts.
         scriptSrc: [
           "'self'",
-          "'wasm-unsafe-eval'", // Required for WebLLM WASM JIT compilation
-          "blob:",              // Required for WebLLM dynamic worker scripts
+          "'unsafe-inline'",
+          "'wasm-unsafe-eval'",
+          "blob:",
         ],
 
-        styleSrc:
-          config.nodeEnv === 'production'
-            ? ["'self'", 'https://fonts.googleapis.com']
-            : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://fonts.googleapis.com',
+          'https://unpkg.com',
+        ],
         fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
         imgSrc: [
           "'self'",

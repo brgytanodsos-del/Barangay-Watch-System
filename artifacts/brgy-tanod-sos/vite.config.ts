@@ -24,8 +24,7 @@ export default defineConfig({
     allowedHosts: true,
     hmr: process.env.DISABLE_HMR !== 'true',
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
     },
   },
   optimizeDeps: {
