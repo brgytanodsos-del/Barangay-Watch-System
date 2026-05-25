@@ -399,31 +399,76 @@ export default function App() {
       setIsLoggingIn(true);
 
       try {
-        if (email && password) {
-          // Use Firebase Authentication directly
+        if (!email || !password) return;
+
+        // ── 1. Try Firebase Authentication first ───────────────────────────
+        let firebaseUser: any = null;
+        try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          const firebaseUser = userCredential.user;
+          firebaseUser = userCredential.user;
+        } catch (fbErr: any) {
+          // If Firebase says "user-not-found", the account may only exist in SQL DB
+          if (
+            fbErr.code === 'auth/invalid-credential' ||
+            fbErr.code === 'auth/user-not-found' ||
+            fbErr.code === 'auth/wrong-password'
+          ) {
+            console.log('[Auth] Firebase login failed, trying backend API...');
+          } else {
+            throw fbErr; // Re-throw unexpected errors
+          }
+        }
+
+        if (firebaseUser) {
           const token = await firebaseUser.getIdToken();
-          
           safeStorage.setItem("token", token);
-          
-          // Construct basic profile, actual role tracking is handled by AuthContext
+
           const localProfile: User = {
             id: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: firebaseUser.displayName || 'System User',
             email: firebaseUser.email || '',
-            role: 'resident', // Default fallback, AuthContext will overwrite
+            role: 'resident',
             status: 'approved',
             createdAt: new Date().toISOString()
           };
-          
+
           safeStorage.setItem("user", JSON.stringify(localProfile));
           setUser(localProfile);
           setProfile(localProfile);
-          
           toast.success(`Unit Authenticated`, { icon: "🔑" });
+          return;
         }
+
+        // ── 2. Fallback: backend SQL login (for bootstrap/admin accounts) ───
+        const backendRes = await api.auth.login({ email, password });
+        if (!backendRes || !backendRes.success) {
+          throw new Error(backendRes?.message || 'Login failed');
+        }
+
+        const backendUser = backendRes.data?.user;
+        const backendToken = backendRes.data?.token;
+        if (!backendUser || !backendToken) {
+          throw new Error('Invalid server response');
+        }
+
+        safeStorage.setItem("token", backendToken);
+
+        const localProfile: User = {
+          id: backendUser.id,
+          uid: backendUser.id,
+          name: backendUser.name || email.split('@')[0],
+          email: backendUser.email,
+          role: backendUser.role || 'resident',
+          status: (backendUser.status as RegistryStatus) || 'approved',
+          createdAt: backendUser.created_at || new Date().toISOString(),
+        };
+
+        safeStorage.setItem("user", JSON.stringify(localProfile));
+        setUser(localProfile);
+        setProfile(localProfile);
+        toast.success(`Unit Authenticated (DB)`, { icon: "🔑" });
+
       } catch (err: any) {
         console.error("AUTH_FAULT:", err);
         let errorMsg = err.message;
