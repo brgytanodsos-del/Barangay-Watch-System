@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, Shield, HelpCircle, HardDrive } from 'lucide-react';
 import { guardianAI } from '../../services/guardianAIService';
-import { isWebLLMReady } from '../../lib/webllm';
 
 interface Message {
   id: string;
@@ -46,32 +45,26 @@ export const ResidentGuardianChat: React.FC = () => {
     setIsTyping(true);
 
     try {
-      if (isWebLLMReady()) {
-        const context = { pendingSOS: 0, activeTanods: 5, isSuperAdmin: false };
-        const response = await guardianAI.processCommand(input, context);
-        
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: response.reply,
-          sender: 'guardian',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, botMsg]);
-      } else {
-        setTimeout(() => {
-          const botMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            text: 'Pasensya na, pinaghahandaan ko pa ang aking kaalaman (AI model loading). Maaari kang tumawag sa hotline kung may emergency.',
-            sender: 'guardian',
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, botMsg]);
-          setIsTyping(false);
-        }, 1000);
-        return;
-      }
+      // Always use server-side Gemini AI (WebLLM is disabled in this environment)
+      const context = { pendingSOS: 0, activeTanods: 5, isSuperAdmin: false };
+      const response = await guardianAI.processCommand(input, context);
+
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: response.reply,
+        sender: 'guardian',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
     } catch (error) {
       console.error('Chat error:', error);
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Pasensya na, nagkaroon ng problema sa pagproseso. Maaari kang tumawag sa hotline kung may emergency.',
+        sender: 'guardian',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
     } finally {
       setIsTyping(false);
     }

@@ -3,7 +3,6 @@ import * as api from '../lib/api';
 import { User, IncidentStatus } from '../types';
 import { X } from 'lucide-react';
 import AnimatedButton from './AnimatedButton';
-import { promptWebLLM, setWebLLMProgressCallback, isWebLLMReady } from '../lib/webllm';
 import { guardianAI } from '../services/guardianAIService';
 import { Sparkles, BrainCircuit } from 'lucide-react';
 
@@ -31,7 +30,7 @@ export default function IncidentForm({ profile, onClose }: IncidentFormProps) {
   const [isClassifying, setIsClassifying] = useState(false);
 
   const handleSmartClassify = async () => {
-    if (!formData.description || isClassifying || !isWebLLMReady()) return;
+    if (!formData.description || isClassifying) return;
     setIsClassifying(true);
     try {
         const category = await guardianAI.classifyIncident(formData.description);
@@ -46,20 +45,21 @@ export default function IncidentForm({ profile, onClose }: IncidentFormProps) {
   const handleAIEnhance = async () => {
     if (!formData.description) return;
     setIsEnhancing(true);
-    setEnhanceProgress(0);
-    setWebLLMProgressCallback((pct, text) => {
-        setEnhanceProgress(pct);
-        setEnhanceText(text);
-    });
+    setEnhanceProgress(30);
 
     try {
-        const sysPrompt = "You are a professional Philippine Barangay Secretary. Rewrite the following brief incident notes into a formal, clear, and complete incident report narrative in proper Tagalog. IT MUST SOUND LIKE AN OFFICIAL BLOTTER. ONLY output the written narrative, nothing else. Do not add made up details, but ensure sentences are complete.";
-        const enhanced = await promptWebLLM(sysPrompt, `Notes:\nType: ${formData.type}\nLocation: ${formData.location}\nPersons: ${formData.personsInvolved}\nNotes: ${formData.description}\nActions: ${formData.actionsTaken}`);
+        const prompt = `You are a professional Philippine Barangay Secretary. Rewrite the following brief incident notes into a formal, clear, and complete incident report narrative in proper Tagalog. IT MUST SOUND LIKE AN OFFICIAL BLOTTER. ONLY output the written narrative, nothing else. Do not add made up details, but ensure sentences are complete.\n\nNotes:\nType: ${formData.type}\nLocation: ${formData.location}\nPersons: ${formData.personsInvolved}\nNotes: ${formData.description}\nActions: ${formData.actionsTaken}`;
+
+        // Use server-side Gemini AI (WebLLM is disabled in this environment)
+        const enhanced = await guardianAI.generateResponse(prompt);
+        setEnhanceProgress(100);
         setFormData(prev => ({ ...prev, description: enhanced }));
     } catch (e) {
         console.error("AI Enhance failed:", e);
+        alert("AI enhancement failed. Please try again or write manually.");
     } finally {
         setIsEnhancing(false);
+        setEnhanceProgress(0);
     }
   };
 
@@ -111,9 +111,9 @@ export default function IncidentForm({ profile, onClose }: IncidentFormProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between ml-1">
                 <label className="text-[10px] font-black uppercase text-[#8E9299] tracking-widest">Incident Type</label>
-                {isWebLLMReady() && formData.description && (
-                  <button 
-                   type="button" 
+                {formData.description && (
+                  <button
+                   type="button"
                    onClick={handleSmartClassify}
                    disabled={isClassifying}
                    className="text-[9px] flex items-center gap-1 font-black uppercase tracking-widest text-cyan-400 hover:text-cyan-300 transition-colors"

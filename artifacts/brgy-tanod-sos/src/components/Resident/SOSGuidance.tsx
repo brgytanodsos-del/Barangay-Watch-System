@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, BookOpen, ChevronRight, Loader2 } from 'lucide-react';
 import { guardianAI } from '../../services/guardianAIService';
-import { isWebLLMReady } from '../../lib/webllm';
 
 interface SOSGuidanceProps {
   type: string;
@@ -14,18 +13,6 @@ export const SOSGuidance: React.FC<SOSGuidanceProps> = ({ type }) => {
 
   useEffect(() => {
     const fetchSteps = async () => {
-      if (!isWebLLMReady()) {
-        // Basic fallback
-        const basics = {
-          FIRE: ['Lisanin agad ang gusali.', 'Tumawag sa 911.', 'Huwag gumamit ng elevator.'],
-          MEDICAL: ['Tingnan kung humihinga ang biktima.', 'Huwag galawin kung may tama sa leeg.', 'Tumawag sa ambulansya.'],
-          CRIME: ['Pumunta sa ligtas na lugar.', 'Huwag lumaban kung may sandata.', 'Tandaan ang itsura ng salarin.'],
-        };
-        setSteps(basics[type as keyof typeof basics] || ['Manatiling kalmado.', 'Hintayin ang pagdating ng Tanod.', 'Humingi ng tulong sa kapitbahay.']);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
         const raw = await guardianAI.generateFirstAid(type);
@@ -33,6 +20,13 @@ export const SOSGuidance: React.FC<SOSGuidanceProps> = ({ type }) => {
         setSteps(split.length > 0 ? split : ['Manatiling kalmado.']);
       } catch (e) {
         console.error("Guidance error:", e);
+        // Basic fallback on error
+        const basics = {
+          FIRE: ['Lisanin agad ang gusali.', 'Tumawag sa 911.', 'Huwag gumamit ng elevator.'],
+          MEDICAL: ['Tingnan kung humihinga ang biktima.', 'Huwag galawin kung may tama sa leeg.', 'Tumawag sa ambulansya.'],
+          CRIME: ['Pumunta sa ligtas na lugar.', 'Huwag lumaban kung may sandata.', 'Tandaan ang itsura ng salarin.'],
+        };
+        setSteps(basics[type as keyof typeof basics] || ['Manatiling kalmado.', 'Hintayin ang pagdating ng Tanod.', 'Humingi ng tulong sa kapitbahay.']);
       } finally {
         setLoading(false);
       }

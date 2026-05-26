@@ -11,7 +11,7 @@ import {
   SystemBroadcast
 } from '../types';
 import { toast } from 'react-hot-toast';
-import { isWebLLMReady, promptWebLLM } from '../lib/webllm';
+import { guardianAI } from '../services/guardianAIService';
 
 export function useSocketListeners(
   profile: User | null, 
@@ -74,8 +74,8 @@ export function useSocketListeners(
           toast.error(`🚨 SOS EMERGENCY: ${formattedAlert.type}`, { duration: 10000, id: `sos-${formattedAlert.id}` });
           showSOSNotification(formattedAlert);
 
-          // WebLLM Duplicate SOS Checking (Admin side AI feature)
-          if (isWebLLMReady() && data.type !== 'update') { // Only on new alerts
+          // AI Duplicate SOS Checking (Admin side AI feature)
+          if (data.type !== 'update') { // Only on new alerts
              const activeAlerts = useIncidentStore.getState().alerts.filter(a => a.status === 'pending');
              if (activeAlerts.length > 0) {
                  // Compare against the most recent active alert
@@ -83,9 +83,8 @@ export function useSocketListeners(
                  // If it's literally the same ID, ignore
                  if (recentAlert.id !== formattedAlert.id) {
                      try {
-                        const sysPrompt = "You are an AI deduplication agent. Given two emergency reports, determine if they likely describe the EXACT SAME INCIDENT happening right now. Reply ONLY with 'DUPLICATE' or 'UNIQUE'. No other words.";
-                        const promptText = `Report 1: ${recentAlert.type} near ${recentAlert.location.lat},${recentAlert.location.lng} by ${recentAlert.residentName}. Desc: ${recentAlert.description}\nReport 2: ${formattedAlert.type} near ${formattedAlert.location.lat},${formattedAlert.location.lng} by ${formattedAlert.residentName}. Desc: ${formattedAlert.description}`;
-                        const response = await promptWebLLM(sysPrompt, promptText, 0.1);
+                        const prompt = `You are an AI deduplication agent. Given two emergency reports, determine if they likely describe the EXACT SAME INCIDENT happening right now. Reply ONLY with 'DUPLICATE' or 'UNIQUE'. No other words.\n\nReport 1: ${recentAlert.type} near ${recentAlert.location.lat},${recentAlert.location.lng} by ${recentAlert.residentName}. Desc: ${recentAlert.description}\nReport 2: ${formattedAlert.type} near ${formattedAlert.location.lat},${formattedAlert.location.lng} by ${formattedAlert.residentName}. Desc: ${formattedAlert.description}`;
+                        const response = await guardianAI.generateResponse(prompt);
                         if (response.includes("DUPLICATE")) {
                             toast(`🤖 AI Alert: Possible Duplicate SOS Detected. Resembling active incident from ${recentAlert.residentName}.`, { icon: '⚠️', duration: 10000, style: { background: '#f59e0b', color: 'black' } });
                         }

@@ -12,6 +12,12 @@ export interface GuardianResponse {
   action?: 'SUMMARIZE' | 'SUGGEST_DISPATCH' | 'STATUS_REPORT' | 'HELP';
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 type ProgressCallback = (progress: number, text: string) => void;
 
 class GuardianAIServiceBackend {
@@ -132,6 +138,34 @@ class GuardianAIServiceBackend {
     }
   }
 
+  public async generateResponse(prompt: string, onToken?: (token: string) => void): Promise<string> {
+    try {
+      const response = await fetchAPI('/ai/guardian', {
+        method: 'POST',
+        body: JSON.stringify({ text: prompt })
+      });
+      const finalAns = response.response || "Pasensya na, may problema sa AI. Paki-ulit mamaya.";
+
+      if (onToken) {
+        // Stream/split response to simulate live generation look and feel
+        const words = finalAns.split(' ');
+        let accumulated = "";
+        for (let i = 0; i < words.length; i++) {
+          const part = words[i] + (i < words.length - 1 ? ' ' : '');
+          accumulated += part;
+          onToken(part);
+          await new Promise(r => setTimeout(r, Math.random() * 20 + 5));
+        }
+      }
+      return finalAns;
+    } catch (e) {
+      console.error("[GuardianAI] generateResponse failed:", e);
+      const fallbackMsg = "Pasensya na, may problema sa AI. Paki-ulit mamaya.";
+      if (onToken) onToken(fallbackMsg);
+      return fallbackMsg;
+    }
+  }
+
   public async generateFirstAid(type: string): Promise<string> {
     try {
         const response = await fetchAPI('/ai/assistant', {
@@ -150,6 +184,15 @@ class GuardianAIServiceBackend {
     if (context.activeTanods === 0 && context.pendingSOS > 0)
       return "Notice: Pending incidents found but no Tanods are on patrol. Immediate dispatch recommended.";
     return null;
+  }
+
+  public speak(text: string) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'tl-PH';
+      speechSynthesis.speak(utterance);
+    }
   }
 }
 

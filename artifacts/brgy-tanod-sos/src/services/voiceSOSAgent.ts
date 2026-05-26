@@ -246,9 +246,9 @@ class VoiceSOSAgent {
     }
   }
 
-  /** Returns true if the WebLLM model is already in memory */
+  /** Always returns true — server-side Gemini AI is always ready */
   isModelReady(): boolean {
-    return isWebLLMReady();
+    return true;
   }
 }
 

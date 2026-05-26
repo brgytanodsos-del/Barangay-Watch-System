@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { BarChart as ChartIcon, Zap, Shield, Users, Activity, Bot } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { User } from '../../types';
-import { promptWebLLM, setWebLLMProgressCallback } from '../../lib/webllm';
+import { guardianAI } from '../../services/guardianAIService';
 import { LiveHeatmap } from './LiveHeatmap';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
@@ -92,18 +92,19 @@ export default function AdminAnalytics({ profile }: { profile: User | null }) {
   const generateAIBriefing = async () => {
     if (!data) return;
     setIsGeneratingAI(true);
-    setAiProgress(0);
-    setWebLLMProgressCallback((pct) => setAiProgress(pct));
+    setAiProgress(30);
 
     try {
-      const systemPrompt = "You are the AI Intelligence Analyst for a Philippine Barangay. Analyze the provided statistical data. Provide a short, written intelligence briefing to the Captain in Tagalog/English. Identify the most common incident type and any increasing trends. Keep it strictly under 3 sentences.";
-      const brief = await promptWebLLM(systemPrompt, `Data: ${JSON.stringify({ alertsByType: data.alertsByType, history: data.alertsHistory })}`);
+      const prompt = `You are the AI Intelligence Analyst for a Philippine Barangay. Analyze the provided statistical data. Provide a short, written intelligence briefing to the Captain in Tagalog/English. Identify the most common incident type and any increasing trends. Keep it strictly under 3 sentences.\n\nData: ${JSON.stringify({ alertsByType: data.alertsByType, history: data.alertsHistory })}`;
+      const brief = await guardianAI.generateResponse(prompt);
+      setAiProgress(100);
       setAIBriefing(brief);
     } catch (e) {
       console.error(e);
       toast.error('Failed to generate AI brief');
     } finally {
       setIsGeneratingAI(false);
+      setAiProgress(0);
     }
   };
 
