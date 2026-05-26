@@ -54,16 +54,12 @@ export const useTTS = () => {
     }
 
     try {
-      const response = await fetch('/api/tts/speak', {
+      const response = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: finalText,
-          ssml: finalSSML,
-          language,
-          style,
-          voice,
-          priority,
+          options: { language, style, voice }
         }),
       });
 
@@ -79,7 +75,9 @@ export const useTTS = () => {
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      const audioBlob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+      // Use the server's content-type so the browser plays the correct format
+      const audioMime = response.headers.get('content-type') || 'audio/mpeg';
+      const audioBlob = new Blob([arrayBuffer], { type: audioMime });
       const audioUrl = URL.createObjectURL(audioBlob);
 
       // Add to queue with priority

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { guardianAI } from '../services/guardianAIService';
-import { isWebLLMReady } from '../lib/webllm';
 import { Mic, MicOff, Volume2, AlertTriangle, X, Settings, Brain, MessageSquare } from 'lucide-react';
 import { voiceService, VoiceOptions } from '../services/voiceService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -87,46 +86,44 @@ const GuardianVoiceTacticalAssistant: React.FC<GuardianVoiceAssistantProps> = ({
 
   const processCommand = async (text: string) => {
     try {
-      if (isWebLLMReady()) {
-        setStatus('Analysis sa Guardian AI...');
-        const details = await guardianAI.extractSOSDetails(text);
-        
-        if (details.severity >= 4) {
-             onSOS?.();
-             await speak(`Grave ang sitwasyon. Type: ${details.type}. Lokasyon: ${details.location}. Naipadala na ang tactical response.`);
-             setIsThinking(false);
-             return;
-        }
+      setStatus('Analysis sa Guardian AI...');
 
-        const response = await guardianAI.processCommand(text, {
-            pendingSOS: 0, 
-            activeTanods: 3, 
-            isSuperAdmin: true
-        });
+      // Always use Gemini server AI (WebLLM is disabled in this environment)
+      const details = await guardianAI.extractSOSDetails(text);
 
-        if (response.action === 'SUGGEST_DISPATCH') {
-            onCommand?.('dispatch', text);
-        } else {
-            onCommand?.('info', text);
-        }
-        
+      if (details.severity >= 4) {
+        onSOS?.();
+        await speak(`Grave ang sitwasyon. Type: ${details.type}. Lokasyon: ${details.location}. Naipadala na ang tactical response.`);
         setIsThinking(false);
-        await speak(response.reply);
-      } else {
-        const isSOS = /sos|emergency|sakuna|tulungan|help|sunog/i.test(text.toLowerCase());
-        if (isSOS) {
-            onSOS?.();
-            await speak("SOS! Naipadala na ang alert. Tumutugon na ang mga Tanod.");
-        } else {
-            onCommand?.('general', text);
-            await speak(`Naintindihan ko: ${text}`);
-        }
-        setIsThinking(false);
+        return;
       }
+
+      const response = await guardianAI.processCommand(text, {
+        pendingSOS: 0,
+        activeTanods: 3,
+        isSuperAdmin: true
+      });
+
+      if (response.action === 'SUGGEST_DISPATCH') {
+        onCommand?.('dispatch', text);
+      } else {
+        onCommand?.('info', text);
+      }
+
+      setIsThinking(false);
+      await speak(response.reply);
     } catch (e) {
       console.error("Voice process error:", e);
+      // Fallback: Basic keyword detection
+      const isSOS = /sos|emergency|sakuna|tulungan|help|sunog/i.test(text.toLowerCase());
+      if (isSOS) {
+        onSOS?.();
+        await speak("SOS! Naipadala na ang alert. Tumutugon na ang mga Tanod.");
+      } else {
+        onCommand?.('general', text);
+        await speak(`Naintindihan ko: ${text}`);
+      }
       setIsThinking(false);
-      await speak(`Paki-ulit, hindi ko nakuha ang utos.`);
     }
   };
 

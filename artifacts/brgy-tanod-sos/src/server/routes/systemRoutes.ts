@@ -123,7 +123,9 @@ router.post('/tts', authenticate, authorize(['resident', 'admin', 'superadmin', 
     }
     
     console.log(`[TTS] Serving buffer of size: ${buffer.length} bytes`);
-    res.setHeader('Content-Type', 'audio/mpeg');
+    // Audio type depends on the TTS provider used
+    const audioType = buffer.length > 44 && buffer.toString('ascii', 0, 4) === 'RIFF' ? 'audio/wav' : 'audio/mpeg';
+    res.setHeader('Content-Type', audioType);
     res.setHeader('Content-Length', buffer.length);
     res.send(buffer);
   } catch (err: any) {

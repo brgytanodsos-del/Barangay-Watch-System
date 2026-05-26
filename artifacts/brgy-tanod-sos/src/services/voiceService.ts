@@ -2,8 +2,6 @@
  * Professional Voice Intelligence Service
  * Handles Speech Recognition (STT) and Synthesis (TTS)
  */
-import edgeTTS from '@andresaya/edge-tts';
-
 export interface VoiceOptions {
   voice?: string;
   rate?: string;
@@ -34,18 +32,21 @@ class VoiceService {
       // If server already provided premium audio via socket, play it immediately
       if (audioBase64) {
         await this.playBase64Audio(audioBase64);
+        this.isSpeaking = false;
         return;
       }
 
-      const response = await fetch('/api/system/tts', {
+      const response = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          voice: options.voice || this.defaultVoice,
-          rate: options.rate || '+0%',
-          pitch: options.pitch || '+0Hz',
-          volume: options.volume || '+0%',
+          options: {
+            voice: options.voice || this.defaultVoice,
+            rate: options.rate || '+0%',
+            pitch: options.pitch || '+0Hz',
+            volume: options.volume || '+0%',
+          }
         }),
       });
 
@@ -56,15 +57,15 @@ class VoiceService {
         }
         const blob = await response.blob();
         await this.playAudioBlob(blob);
+        this.isSpeaking = false;
         return;
       }
+      throw new Error('TTS server responded with non-OK status');
     } catch (err) {
       console.warn('TTS failed, using browser fallback', err);
+      await this.speakWithBrowser(text, options);
+      this.isSpeaking = false;
     }
-
-    // Browser Fallback
-    await this.speakWithBrowser(text, options);
-    this.isSpeaking = false;
   }
 
   private async playBase64Audio(base64: string): Promise<void> {

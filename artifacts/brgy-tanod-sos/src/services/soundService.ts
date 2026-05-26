@@ -29,6 +29,14 @@ class SoundService {
         src: ['/sounds/sos-confirmed.mp3', 'https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3'], // High priority ping
         volume: 0.5
       }),
+      sos_alarm: new Howl({
+        src: ['https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3'], // Alarm beep
+        volume: 0.6
+      }),
+      alert_emergency: new Howl({
+        src: ['https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'], // Emergency alert
+        volume: 0.6
+      }),
       success: new Howl({
         src: ['https://assets.mixkit.co/active_storage/sfx/1110/1110-preview.mp3'], // Interface success
         volume: 0.4
