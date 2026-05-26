@@ -45,7 +45,7 @@ export const alerts = pgTable('alerts', {
   id: uuid('id').primaryKey().defaultRandom(),
   residentId: uuid('resident_id').references(() => users.id),
   type: text('type').notNull(),
-  status: text('status').notNull().default('active'),
+  status: text('status').notNull().default('pending'),
   location: jsonb('location').notNull(),
   description: text('description'),
   severityScore: integer('severity_score'),

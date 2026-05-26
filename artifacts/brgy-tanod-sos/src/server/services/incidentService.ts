@@ -204,7 +204,7 @@ export const incidentService = {
       `UPDATE alerts 
        SET status = $1, 
            notes = COALESCE($2, notes), 
-           assigned_tanod_id = COALESCE($3, assigned_tanod_id),
+           assigned_to = COALESCE($3, assigned_to),
            updated_at = now() 
        WHERE id = $4 RETURNING *`,
       [status.toLowerCase(), notes || null, assignedTo || null, sosId]
@@ -219,7 +219,7 @@ export const incidentService = {
       id: updated.id,
       status: updated.status.toUpperCase(),
       notes: updated.notes,
-      assignedTo: updated.assigned_tanod_id,
+      assignedTo: updated.assigned_to,
       updatedAt: updated.updated_at
     };
 
@@ -241,7 +241,7 @@ export const incidentService = {
       `SELECT a.*, u.name as "residentName", t.name as "assignedTanodName"
        FROM alerts a 
        LEFT JOIN users u ON a.resident_id = u.id 
-       LEFT JOIN users t ON a.assigned_tanod_id = t.id
+       LEFT JOIN users t ON a.assigned_to = t.id
        WHERE a.id = $1`,
       [sosId]
     );
